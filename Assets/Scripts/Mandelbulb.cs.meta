@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: e68c10a924fad884bbe163c48269f275
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - _mandelbulbShader: {fileID: 4800000, guid: 5dc791e398bf6d14e8118e4ca9bb29dc, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
