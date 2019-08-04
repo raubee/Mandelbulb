@@ -2,19 +2,25 @@
 
 namespace AdLucem.Maths
 {
+	[RequireComponent(typeof(Camera))]
 	public class Mandelbulb : MonoBehaviour
 	{
 		[HideInInspector, SerializeField]
 		private Shader _mandelbulbShader;
 
+		[SerializeField] private float _nearClipOffset = 0f;
+		[SerializeField] private float _farClipOffset = 0f;
+
 		private MeshRenderer _renderer;
 		private Material material;
 		private Mesh _mesh;
+		private Camera _camera;
 
 		private void Start()
 		{
-			InitFrustumVolume();
+			_camera = GetComponent<Camera>();
 			material = new Material(_mandelbulbShader);
+			InitFrustumVolume();
 			_renderer.material = material;
 		}
 
@@ -23,66 +29,74 @@ namespace AdLucem.Maths
 			UpdateFrustumVolume();
 		}
 
-		
 		private void UpdateFrustumVolume()
 		{
 			var vertices = _mesh.vertices;
 
-			var size = 2f;
-			var cam = Camera.main;
-			var h = cam.nearClipPlane * Mathf.Tan(cam.fieldOfView / 2);
-			var localOffSet = cam.transform.localPosition;
-			localOffSet.y += h;
+			var nc = _camera.nearClipPlane + _nearClipOffset;
+			var nf = _camera.farClipPlane + _farClipOffset;
+			var fov = _camera.fieldOfView;
+			var pos = _camera.transform.position;
+			var fwd = _camera.transform.forward;
+			var up = _camera.transform.up;
+			var right = _camera.transform.right;
+			var tan = Mathf.Tan(fov * Mathf.Deg2Rad * .5f);
+			var ratio = _camera.pixelRect.width / _camera.pixelRect.height;
 
-			var f_tfr = cam.transform.position;
-			f_tfr.SubVec4(cam.transform.localToWorldMatrix * localOffSet);
+			var ncp = pos + fwd * nc;
+			var nfp = pos + fwd * nf;
+			var upp = up * tan * nc;
+			var uppf = up * tan * nf;
+			var rp = right * tan * nc * ratio;
+			var rpf = right * tan * nf * ratio;
 
-			// tfr
-			vertices[5] = f_tfr;
-			vertices[11] = f_tfr;
-			vertices[18] = f_tfr;
+			// top front left
+			var p = ncp + upp - rp;
+			vertices[5] = p;
+			vertices[11] = p;
+			vertices[18] = p;
 
-			// tfl
-			var tfl_p = new Vector3(size, size, -size);
-			vertices[4] = tfl_p;
-			vertices[10] = tfl_p;
-			vertices[21] = tfl_p;
+			// top front right
+			p = ncp + upp + rp;
+			vertices[4] = p;
+			vertices[10] = p;
+			vertices[21] = p;
 
-			// bfl
-			var bfl_p = new Vector3(size, -size, -size);
-			vertices[6] = bfl_p;
-			vertices[12] = bfl_p;
-			vertices[20] = bfl_p;
+			// bottom front right
+			p = ncp - upp + rp;
+			vertices[6] = p;
+			vertices[12] = p;
+			vertices[20] = p;
 
-			// bfr
-			var bfr_p = new Vector3(-size, -size, -size);
-			vertices[7] = bfr_p;
-			vertices[15] = bfr_p;
-			vertices[19] = bfr_p;
+			// bottom front left
+			p = ncp - upp - rp;
+			vertices[7] = p;
+			vertices[15] = p;
+			vertices[19] = p;
 
-			// tbr
-			var tbr_p = new Vector3(-size, size, size);
-			vertices[3] = tbr_p;
-			vertices[9] = tbr_p;
-			vertices[17] = tbr_p;
+			// top back left
+			p = nfp + uppf - rpf;
+			vertices[3] = p;
+			vertices[9] = p;
+			vertices[17] = p;
 
-			// tbl
-			var tbl_p = new Vector3(size, size, size);
-			vertices[2] = tbl_p;
-			vertices[8] = tbl_p;
-			vertices[22] = tbl_p;
+			// top back right
+			p = nfp + uppf + rpf;
+			vertices[2] = p;
+			vertices[8] = p;
+			vertices[22] = p;
 
-			// bbl
-			var bbl_p = new Vector3(size, -size, size);
-			vertices[0] = bbl_p;
-			vertices[13] = bbl_p;
-			vertices[23] = bbl_p;
+			// bottom back right
+			p = nfp - uppf + rpf;
+			vertices[0] = p;
+			vertices[13] = p;
+			vertices[23] = p;
 
-			// bbr
-			var bbr_p = new Vector3(-size, -size, size);
-			vertices[1] = bbr_p;
-			vertices[14] = bbr_p;
-			vertices[16] = bbr_p;
+			// bottom back left
+			p = nfp - uppf - rpf;
+			vertices[1] = p;
+			vertices[14] = p;
+			vertices[16] = p;
 
 			_mesh.vertices = vertices;
 		}
@@ -96,19 +110,10 @@ namespace AdLucem.Maths
 		{
 			var volume = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			volume.name = "Marching volume";
+			volume.hideFlags = HideFlags.HideAndDontSave;
 
 			_mesh = volume.GetComponent<MeshFilter>().mesh;
 			_renderer = volume.GetComponent<MeshRenderer>();
-		}
-	}
-
-	public static class ExtensionVector3
-	{
-		public static void SubVec4(this Vector3 target, Vector4 vector)
-		{
-			target.x -= vector.x;
-			target.y -= vector.y;
-			target.z -= vector.z;
 		}
 	}
 }
